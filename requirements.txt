@@ -1,0 +1,14 @@
+# Core ADK 2.0 multi-agent orchestrator framework
+google-adk==2.3.0
+# Vertex AI unified Gemini API client SDK
+google-genai==2.9.0
+# Strongly typed schema state validation models
+pydantic==2.13.4
+# Subprocess sandbox testing harness environment 
+pytest==9.1.1
+# Pre-installed database drivers. Required because in Case Study 4 (Multi-File),
+# the refactoring agents generate database adapter layers that import these packages.
+# If they are missing in the test sandboxes, Pytest collection fails with ModuleNotFoundError.
+pymysql==1.1.0
+mysql-connector-python==8.0.33
+

@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+
+# Environment and Secrets
+.env
+
+# Testing
+.pytest_cache/
+
+# Local Run Outputs
+results/
+output/
+
+# IDEs and System
+.vscode/
+.idea/
+.DS_Store
