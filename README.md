@@ -9,6 +9,8 @@ Rather than focusing on raw prompt engineering, this project showcases **Harness
 ## Project Structure
 
 ```
+├── basics/
+│   └── hermetic_repair_loop.py  # Case Study 1 Baseline Imperative self-correcting script
 ├── targets/
 │   ├── ACCTCALC.cbl             # Case Study 2 COBOL packed-decimal file with constraints
 │   ├── legacy_analytics.py      # Case Study 1 legacy Python 2.7 file with iterator/division traps
@@ -50,8 +52,11 @@ The repository implements six case studies, each demonstrating a distinct harnes
 
 ### Case Study 1: Cyclic Verification Harness (Dynamic Loop)
 * **Goal**: Python 2.7 to 3.x migration.
-* **Topological Pattern**: Native cyclic routing back-edges.
-* **Mechanism**: The harness routes legacy code to a `RefactorAgent`, captures compiler or pytest failures via subprocess errors, and loops back to the agent with console traceback logs until the test suite passes or a max-iteration guard (5) is triggered.
+* **Topological Pattern**: Native cyclic routing back-edges vs. Imperative Loop.
+* **Implementations**:
+  * **Baseline (Unpruned Imperative)**: [basics/unpruned_repair_loop.py](basics/unpruned_repair_loop.py) runs a standard bare-metal loop using the raw GenAI Chat API (accumulating history and showcasing quadratic context growth).
+  * **Baseline (Hermetic Imperative)**: [basics/hermetic_repair_loop.py](basics/hermetic_repair_loop.py) runs a bare-metal imperative loop using custom context pruning, isolation, and a lightweight hypothesis tracker.
+  * **Production (Declarative)**: Upgraded ADK 2.0 graph workflow in [workflows/workflows.py](workflows/workflows.py) leveraging `StatePrunerNode` to dynamically clean the events history array.
 
 ### Case Study 2: Parallel Parsing & Synthesis Harness (Fan-Out/Fan-In Graph)
 * **Goal**: COBOL to Python modernization.
@@ -182,6 +187,12 @@ For local debugging and rapid execution:
    
    # Run a specific Case Study (e.g., Case Study 1)
    python run_experiments.py --case-study 1
+   
+   # Run the hermetic imperative baseline loop
+   python basics/hermetic_repair_loop.py
+   
+   # Run the unpruned imperative baseline loop
+   python basics/unpruned_repair_loop.py
    ```
 
 ### 4.4 Generated Analysis Outputs
