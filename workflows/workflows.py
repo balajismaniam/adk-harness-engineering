@@ -18,11 +18,11 @@ import os
 import re
 import tempfile
 import shutil
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, AsyncGenerator
 from pydantic import BaseModel, Field
 
 from google.adk import Agent, Workflow, Context
-from google.adk.workflow import JoinNode, START, Edge, node
+from google.adk.workflow import JoinNode, START, Edge, node, Node
 from google.adk.events.event import Event
 from google.adk.events.event_actions import EventActions
 from google.genai import types
@@ -71,6 +71,9 @@ class GatewayContext(BaseModel):
     iteration_count: int = 0
     test_passed: bool = False
     feedback: str = ""
+    hypotheses_summary: List[str] = Field(default_factory=list)
+    pruned_hypotheses: str = ""
+    latest_traceback: str = ""
 
 
 class EnhancedGatewayContext(GatewayContext):
@@ -184,6 +187,98 @@ def execution_test_node(ctx: Context) -> Event:
         )
  
  
+class StatePrunerNode(Node):
+    """
+    StatePrunerNode intercepts active session state and events history:
+    - Extracts active chat/execution history array.
+    - Summarizes previous intermediate model runs into high-level structural notes.
+    - Truncates and purges historical, redundant stderr tracebacks from previous iterations.
+    - Re-injects the pruned history, the summarized logs, and the single latest active traceback back into the ADK session.
+    """
+    
+    async def run_node_impl(self, *, ctx: Context, node_input: Any) -> AsyncGenerator[Any, None]:
+        events = ctx.session.events
+        
+        # 1. Extract intermediate model runs
+        refactor_events = [e for e in events if e.author == "RefactorAgent"]
+        
+        # 2. Compile/summarize previous trials if we haven't summarized them yet
+        hypotheses = ctx.state.setdefault("hypotheses_summary", [])
+        
+        if len(refactor_events) > len(hypotheses):
+            latest_code = strip_markdown_code(refactor_events[-1].content.parts[0].text)
+            original_code = ctx.state.get("raw_payload", "")
+            
+            if len(refactor_events) > 1:
+                prev_code = strip_markdown_code(refactor_events[-2].content.parts[0].text)
+            else:
+                prev_code = original_code
+                
+            from google.genai import Client
+            client = Client()
+            
+            prompt = (
+                "Compare the original/previous code with the proposed corrected code. "
+                "Summarize the main correction or hypothesis attempted in a short, single-sentence phrase "
+                "(e.g., 'Attempted print parentheses fix' or 'Attempted floor division conversion').\n\n"
+                f"Before:\n{prev_code}\n\n"
+                f"After:\n{latest_code}\n\n"
+                "Summary of change:"
+            )
+            
+            try:
+                response = client.models.generate_content(
+                    model="gemini-3.5-flash",
+                    contents=prompt
+                )
+                hyp_text = response.text.strip()
+            except Exception as e:
+                hyp_text = f"Code modification (Error summarizing: {e})"
+                
+            hypotheses.append(f"Trial {len(hypotheses) + 1}: {hyp_text} -> Failed")
+            
+        # 3. Extract the latest active traceback
+        latest_traceback = ctx.state.get("feedback", "")
+        
+        # 4. Re-inject pruned state values
+        ctx.state["pruned_hypotheses"] = "\n".join(hypotheses)
+        ctx.state["latest_traceback"] = latest_traceback
+        
+        # 5. Mutate the events to clear the intermediate chat history
+        # Keep only the very first user prompt
+        first_event = events[0]
+        events.clear()
+        events.append(first_event)
+        
+        # 6. Yield the pruned, summarized feedback message
+        original_code = ctx.state.get("raw_payload", "")
+        current_code = ctx.state.get("modernized_code", "")
+        if not current_code:
+            current_code = original_code
+            
+        pruned_feedback_msg = (
+            "The unit tests failed on the current code state.\n\n"
+            "### Current Code State:\n"
+            "```python\n"
+            f"{current_code}\n"
+            "```\n\n"
+            "### Active Traceback/Error:\n"
+            "```\n"
+            f"{latest_traceback}\n"
+            "```\n\n"
+            "### Previously Tried Hypotheses:\n"
+            f"{ctx.state['pruned_hypotheses']}\n\n"
+            "Please fix the code in legacy_analytics.py to resolve the error."
+        )
+        
+        yield Event(
+            content=types.Content(role="user", parts=[types.Part(text=pruned_feedback_msg)]),
+            actions=EventActions(route="proceed")
+        )
+
+state_pruner_node = StatePrunerNode(name="StatePruner")
+
+
 # 3. Compile Standalone Case Study 1 Graph Workflow
 # Models a cyclic workflow where execution branches depending on node results.
 # The graph utilizes a loop-back edge to route execution programmatically.
@@ -192,7 +287,8 @@ loop_flow = Workflow(
     edges=[
         Edge(from_node=START, to_node=refactor_agent),
         Edge(from_node=refactor_agent, to_node=execution_test_node),
-        Edge(from_node=execution_test_node, to_node=refactor_agent, route="loop_back")
+        Edge(from_node=execution_test_node, to_node=state_pruner_node, route="loop_back"),
+        Edge(from_node=state_pruner_node, to_node=refactor_agent, route="proceed")
     ]
 )
 loop_flow.state_schema = GatewayContext
