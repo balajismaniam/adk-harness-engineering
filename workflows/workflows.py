@@ -776,7 +776,7 @@ sqli_flow.state_schema = EnhancedGatewayContext
 # =====================================================================
 
 # 1. Routing Classifier Node
-# Uses programmatic vertex AI calls to classify the payload without polluting chat history.
+# Uses programmatic GEAP calls to classify the payload without polluting chat history.
 @node
 def semantic_router_node(ctx: Context) -> Event:
     """
