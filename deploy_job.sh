@@ -75,7 +75,7 @@ else
     echo "         Created service account $SA_EMAIL."
 fi
 
-echo "  [INFO] Granting Vertex AI User role to the service account..."
+echo "  [INFO] Granting GEAP / Cloud AI role to the service account..."
 gcloud projects add-iam-policy-binding "$GOOGLE_CLOUD_PROJECT" \
     --member="serviceAccount:$SA_EMAIL" \
     --role="roles/aiplatform.user" \
@@ -144,7 +144,7 @@ if gcloud run jobs describe adk-analysis-job --project="$GOOGLE_CLOUD_PROJECT" -
         --region "$CLOUD_RUN_REGION" \
         --add-volume="name=adk-storage,type=cloud-storage,bucket=$GCS_BUCKET_NAME" \
         --add-volume-mount="volume=adk-storage,mount-path=/mnt/storage" \
-        --set-env-vars GOOGLE_GENAI_USE_VERTEXAI="true",GOOGLE_CLOUD_LOCATION="$GOOGLE_CLOUD_LOCATION",GOOGLE_CLOUD_PROJECT="$GOOGLE_CLOUD_PROJECT",STORAGE_MOUNT_PATH="/mnt/storage" \
+        --set-env-vars GOOGLE_GENAI_USE_ENTERPRISE="true",GOOGLE_CLOUD_LOCATION="$GOOGLE_CLOUD_LOCATION",GOOGLE_CLOUD_PROJECT="$GOOGLE_CLOUD_PROJECT",STORAGE_MOUNT_PATH="/mnt/storage" \
         --task-timeout="30m" \
         --quiet
 else
@@ -155,7 +155,7 @@ else
         --region "$CLOUD_RUN_REGION" \
         --add-volume="name=adk-storage,type=cloud-storage,bucket=$GCS_BUCKET_NAME" \
         --add-volume-mount="volume=adk-storage,mount-path=/mnt/storage" \
-        --set-env-vars GOOGLE_GENAI_USE_VERTEXAI="true",GOOGLE_CLOUD_LOCATION="$GOOGLE_CLOUD_LOCATION",GOOGLE_CLOUD_PROJECT="$GOOGLE_CLOUD_PROJECT",STORAGE_MOUNT_PATH="/mnt/storage" \
+        --set-env-vars GOOGLE_GENAI_USE_ENTERPRISE="true",GOOGLE_CLOUD_LOCATION="$GOOGLE_CLOUD_LOCATION",GOOGLE_CLOUD_PROJECT="$GOOGLE_CLOUD_PROJECT",STORAGE_MOUNT_PATH="/mnt/storage" \
         --task-timeout="30m" \
         --quiet
     echo "         Created Cloud Run Job 'adk-analysis-job'."

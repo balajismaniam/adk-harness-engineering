@@ -21,10 +21,10 @@ class TopologyTelemetry(BaseModel):
     """The total execution time from start to completion, measured in fractional seconds."""
 
     input_tokens_consumed: int         
-    """The total prompt tokens sent to Vertex AI across all agent steps in the workflow."""
+    """The total prompt tokens sent to Gemini Enterprise Agent Platform (GEAP) across all agent steps in the workflow."""
 
     cached_tokens_consumed: int = 0
-    """The total cached prompt tokens read from Vertex AI across all agent steps in the workflow."""
+    """The total cached prompt tokens read from Gemini Enterprise Agent Platform (GEAP) across all agent steps in the workflow."""
 
     output_tokens_generated: int       
     """The total completion tokens returned by Gemini models in this workflow execution."""

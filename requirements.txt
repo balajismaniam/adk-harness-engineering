@@ -1,6 +1,6 @@
 # Core ADK 2.0 multi-agent orchestrator framework
 google-adk==2.3.0
-# Vertex AI unified Gemini API client SDK
+# Gemini Enterprise Agent Platform (GEAP) unified Gemini API client SDK
 google-genai==2.9.0
 # Strongly typed schema state validation models
 pydantic==2.13.4

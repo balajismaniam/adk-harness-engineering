@@ -2,7 +2,7 @@
 Google ADK 2.0 Consolidated Analysis Runner
 
 This script coordinates and executes all baseline and advanced multi-agent workflow experiments 
-(Case Studies 1-6) using Google ADK 2.0 and the Vertex AI global endpoint.
+(Case Studies 1-6) using Google ADK 2.0 and the Gemini Enterprise Agent Platform (GEAP) global endpoint.
 
 It supports:
 - Sequential execution of all Case Studies or filtering via command-line arguments.
@@ -23,8 +23,12 @@ from google.adk.sessions.in_memory_session_service import InMemorySessionService
 from google.adk import Runner
 from google.genai import types
 
-# Validate Vertex AI Backend configurations
-os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = os.getenv("GOOGLE_GENAI_USE_VERTEXAI", "true")
+# Validate Gemini Enterprise Agent Platform (GEAP) Backend configurations
+if os.getenv("GOOGLE_GENAI_USE_VERTEXAI") and not os.getenv("GOOGLE_GENAI_USE_ENTERPRISE"):
+    print("[DEPRECATION_NOTICE] 'GOOGLE_GENAI_USE_VERTEXAI' is deprecated; automatically migrating to 'GOOGLE_GENAI_USE_ENTERPRISE=true'.")
+    os.environ["GOOGLE_GENAI_USE_ENTERPRISE"] = "true"
+else:
+    os.environ["GOOGLE_GENAI_USE_ENTERPRISE"] = os.getenv("GOOGLE_GENAI_USE_ENTERPRISE", "true")
 
 if not os.getenv("GOOGLE_CLOUD_PROJECT"):
     raise ValueError("Environment variable GOOGLE_CLOUD_PROJECT must be set before running experiments.")
